@@ -4,19 +4,25 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 
+// Logujemy zmienne œrodowiskowe przy starcie serwera
+console.log("Starting TTLock Auth Server with the following environment variables:");
+console.log("CLIENT_ID:", process.env.CLIENT_ID);
+console.log("REDIRECT_URI:", process.env.REDIRECT_URI);
+// Nie pokazujemy client_secret dla bezpieczeñstwa
+
 app.get("/", (req, res) => {
     res.send("TTLock Auth Server is running");
 });
 
 app.get("/callback", async (req, res) => {
+    console.log("Callback endpoint hit. Query parameters received:", req.query);
+
     const { code } = req.query;
 
     if (!code) {
         console.log("No code received in callback");
         return res.status(400).send("No code provided");
     }
-
-    console.log("Callback received:", req.query);
 
     try {
         const response = await axios.post("https://euopen.ttlock.com/oauth2/token", null, {
@@ -29,15 +35,18 @@ app.get("/callback", async (req, res) => {
             }
         });
 
-        console.log("Token response:", response.data);
+        console.log("Token response received from TTLock:", response.data);
 
-        // Pokazanie u¿ytkownikowi, ¿e wszystko posz³o dobrze:
         res.send("Zalogowano pomyœlnie. Mo¿esz zamkn¹æ to okno.");
-
-        // lub alternatywnie:
-        // res.json(response.data); // Jeœli chcesz wyœwietliæ token JSON
     } catch (error) {
-        console.error("Error exchanging code for token:", error.response?.data || error.message);
+        console.error("Error exchanging code for token:");
+        if (error.response) {
+            console.error("Status:", error.response.status);
+            console.error("Data:", error.response.data);
+        } else {
+            console.error("Error message:", error.message);
+        }
+
         res.status(500).send("Error exchanging code for token");
     }
 });
